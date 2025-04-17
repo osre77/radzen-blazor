@@ -12,10 +12,14 @@
 *@
 
 <RadzenDataGrid @ref=grid TItem="Order" AllowAlternatingRows="false" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true"
-Data="@orders" RowUpdate="@OnUpdateRow" Sort="@(args => Reset())" Page="@(args => Reset())" Filter="@(args => Reset())"
-ColumnWidth="200px" CellClick="@OnCellClick">
+                Data="@orders.Where(o => o.OrderID % 2 != 0)" RowUpdate="@OnUpdateRow" Sort="@(args => Reset())" Page="@(args => Reset())" Filter="@(args => Reset())"
+                ColumnWidth="200px" CellClick="@OnCellClick" LoadChildData="@LoadChildData" RowRender="@RowRender">
     <Columns>
-        <RadzenDataGridColumn Property="OrderID" Title="Order ID" Width="120px" Frozen="true" />
+        <RadzenDataGridColumn TItem="Order" Property="OrderID" Title="Order ID" Width="120px" Frozen="true" IsInEditMode="@IsEditing">
+            <EditTemplate Context="order">
+                <RadzenNumeric @ref="editor" Change="@((int args) => Update())" @bind-Value="order.OrderID" Style="width:100%" InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "Select freight" }})" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
 
         <RadzenDataGridColumn TItem="Order" Property="Customer.CompanyName" Title="Customer" Width="280px" IsInEditMode="@IsEditing">
             <Template Context="order">
@@ -122,6 +126,17 @@ ColumnWidth="200px" CellClick="@OnCellClick">
 
     List<KeyValuePair<int, string>> editedFields = new List<KeyValuePair<int, string>>();
     List<Order> ordersToUpdate = new List<Order>();
+
+    void RowRender(RowRenderEventArgs<Order> args)
+    {
+        args.Expandable = dbContext.Orders.Where(o => o.OrderID % 2 == 0).Any(); //dbContext.Employees.Where(e => e.ReportsTo == args.Data.EmployeeID).Any();
+    }
+
+    void LoadChildData(DataGridLoadChildDataEventArgs<Order> args)
+    {
+        args.Data = dbContext.Orders.Where(o => o.OrderID == args.Item.OrderID + 1); //dbContext.Employees.Where(e => e.ReportsTo == args.Item.EmployeeID);
+    }
+
 
     protected override async Task OnInitializedAsync()
     {
